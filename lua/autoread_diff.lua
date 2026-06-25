@@ -43,7 +43,7 @@ local function intra_line_diff(old_cps, new_cps)
   local hunks = vim.text.diff(
     joined(old_cps),
     joined(new_cps),
-    { result_type = "indices" }
+    { result_type = "indices", algorithm = "histogram" }
   )
 
   ---@cast hunks integer[][]
@@ -80,17 +80,22 @@ local function intra_line_diff(old_cps, new_cps)
     end
   end
 
-  table.sort(changes, function(a, b) return a[1] < b[1] end)
+  -- merge close changes to make a cleaner diff
   local merged = {}
+  local merge_gap = 1
+  table.sort(changes, function(a, b) return a[1] < b[1] end)
   for _, change in ipairs(changes) do
+    local lo, hi = change[1], change[2]
     local last = merged[#merged]
-    if last and change[1] <= last[2] + 1 then
-      last[2] = math.max(last[2], change[2])
+    local last_hi = last and last[2]
+    if last and lo - last_hi <= merge_gap + 1 then
+      last[2] = math.max(last_hi, hi)
       last.replaced = last.replaced or change.replaced
     else
-      merged[#merged + 1] = { change[1], change[2], replaced = change.replaced }
+      merged[#merged + 1] = { lo, hi, replaced = change.replaced }
     end
   end
+
   return merged, deletes
 end
 
@@ -185,7 +190,7 @@ local function on_reload(buf)
   local hunks = vim.text.diff(
     table.concat(old, "\n") .. "\n",
     table.concat(new, "\n") .. "\n",
-    { result_type = "indices", linematch = 60 }
+    { result_type = "indices", algorithm = "histogram", linematch = 60 }
   )
 
   if #hunks == 0 then return end
