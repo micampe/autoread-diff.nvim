@@ -74,6 +74,7 @@ local function intra_line_diff(old_cps, new_cps)
 
       deletes[#deletes + 1] = {
         del_mark = del_mark,
+        at = new_start,
         col = new_start >= 1 and (new_cps[new_start].b + #new_cps[new_start].s) or 0,
         text = table.concat(removed),
       }
@@ -96,7 +97,26 @@ local function intra_line_diff(old_cps, new_cps)
     end
   end
 
-  return merged, deletes
+  -- merge deletions with nearby changes
+  local kept_deletes = {}
+  for _, deletion in ipairs(deletes) do
+    local absorbed = false
+    for _, change in ipairs(merged) do
+      local lo, hi = change[1], change[2]
+      if deletion.at >= lo - 1 - merge_gap
+        and deletion.at <= hi + merge_gap
+      then
+        change.replaced = true
+        absorbed = true
+        break
+      end
+    end
+    if not absorbed then
+      kept_deletes[#kept_deletes + 1] = deletion
+    end
+  end
+
+  return merged, kept_deletes
 end
 
 -- line numbers visible in any window showing the buffer
