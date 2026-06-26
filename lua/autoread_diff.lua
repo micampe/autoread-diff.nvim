@@ -28,7 +28,7 @@ end
 -- Extract character level diff from two lines
 --
 -- Returns two values:
---   - changes: list of { lo, hi, replaced }
+--   - changes: list of { first, last, replaced }
 --   - deletes: list of { del_mark, col, text }
 --              del_mark is the index of the codepoint to highlight
 --              when show_deleted_text is false
@@ -55,7 +55,7 @@ local function intra_line_diff(old_cps, new_cps)
       -- expand the range to highlight a full keyword instead of individual characters
       while lo > 1 and is_keyword(new_cps, lo - 1) do lo = lo - 1 end
       while hi < #new_cps and is_keyword(new_cps, hi + 1) do hi = hi + 1 end
-      changes[#changes + 1] = { lo, hi, replaced = old_count > 0 }
+      changes[#changes + 1] = { first = lo, last = hi, replaced = old_count > 0 }
     else
       local removed = {}
 
@@ -84,16 +84,15 @@ local function intra_line_diff(old_cps, new_cps)
   -- merge close changes to make a cleaner diff
   local merged = {}
   local merge_gap = 1
-  table.sort(changes, function(a, b) return a[1] < b[1] end)
+  table.sort(changes, function(a, b) return a.first < b.first end)
   for _, change in ipairs(changes) do
-    local lo, hi = change[1], change[2]
-    local last = merged[#merged]
-    local last_hi = last and last[2]
-    if last and lo - last_hi <= merge_gap + 1 then
-      last[2] = math.max(last_hi, hi)
-      last.replaced = last.replaced or change.replaced
+    local prev = merged[#merged]
+    local prev_last = prev and prev.last
+    if prev and change.first - prev_last <= merge_gap + 1 then
+      prev.last = math.max(prev_last, change.last)
+      prev.replaced = prev.replaced or change.replaced
     else
-      merged[#merged + 1] = { lo, hi, replaced = change.replaced }
+      merged[#merged + 1] = { first = change.first, last = change.last, replaced = change.replaced }
     end
   end
 
@@ -102,9 +101,8 @@ local function intra_line_diff(old_cps, new_cps)
   for _, deletion in ipairs(deletes) do
     local absorbed = false
     for _, change in ipairs(merged) do
-      local lo, hi = change[1], change[2]
-      if deletion.at >= lo - 1 - merge_gap
-        and deletion.at <= hi + merge_gap
+      if deletion.at >= change.first - 1 - merge_gap
+        and deletion.at <= change.last + merge_gap
       then
         change.replaced = true
         absorbed = true
@@ -147,7 +145,7 @@ local function highlight_changed_line(buf, lnum, old_line, new_line)
   local changes, deletes = intra_line_diff(old_cps, new_cps)
 
   for _, change in ipairs(changes) do
-    highlight_range(new_cps[change[1]], new_cps[change[2]], change.replaced and "DiffText" or "DiffAdd")
+    highlight_range(new_cps[change.first], new_cps[change.last], change.replaced and "DiffText" or "DiffAdd")
   end
 
   local show_deleted = vim.g.autoread_diff_show_deleted_text == nil or vim.g.autoread_diff_show_deleted_text
