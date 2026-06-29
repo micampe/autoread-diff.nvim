@@ -117,19 +117,6 @@ local function intra_line_diff(old_cps, new_cps)
   return merged, kept_deletes
 end
 
--- line numbers visible in any window showing the buffer
-local function get_visible_lines(buf)
-  local lines = {}
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == buf then
-      for l = vim.fn.line("w0", win) - 1, vim.fn.line("w$", win) - 1 do
-        lines[l] = true
-      end
-    end
-  end
-  return lines
-end
-
 local function highlight_changed_line(buf, lnum, old_line, new_line)
   local function highlight_range(cp_lo, cp_hi, hl)
     vim.api.nvim_buf_set_extmark(buf, ns, lnum, cp_lo.b, { end_col = cp_hi.b + #cp_hi.s, hl_group = hl })
@@ -189,7 +176,8 @@ local function init_baseline()
 end
 
 local function clear_highlight(buf)
-  if vim.api.nvim_buf_is_valid(buf) then
+  if vim.api.nvim_buf_is_valid(buf) and vim.b[buf].autoread_diff_active then
+    vim.b[buf].autoread_diff_active = nil
     vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
   end
 end
@@ -213,8 +201,9 @@ local function on_reload(buf)
 
   if #hunks == 0 then return end
 
-  local visible_lines = get_visible_lines(buf)
   vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+
+  vim.b[buf].autoread_diff_active = true
 
   ---@cast hunks integer[][]
   for _, h in ipairs(hunks) do
@@ -229,7 +218,7 @@ local function on_reload(buf)
         local line = new_start + i - 1
         if i >= old_count then
           vim.api.nvim_buf_set_extmark(buf, ns, line, 0, { line_hl_group = "DiffAdd" })
-        elseif visible_lines[line] then
+        else
           highlight_changed_line(buf, line, old[old_start + i], new[new_start + i])
         end
       end
