@@ -34,16 +34,16 @@ vim.api.nvim_create_autocmd("BufModifiedSet", {
     if vim.bo[ev.buf].modified then
       require('autoread_diff').clear_highlight(ev.buf)
     end
-  end,
+  end
 })
 
-vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+vim.api.nvim_create_autocmd("CursorMoved", {
   group = augroup,
   callback = function(ev)
     if vim.g.autoread_diff_highlight_ms == nil or vim.g.autoread_diff_highlight_ms > 0 then
       require('autoread_diff').clear_highlight(ev.buf)
     end
-  end,
+  end
 })
 
 vim.api.nvim_create_user_command(
