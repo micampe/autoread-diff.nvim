@@ -53,8 +53,12 @@ local function intra_line_diff(old_cps, new_cps)
     if new_count > 0 then
       local lo, hi = new_start, new_start + new_count - 1
       -- expand the range to highlight a full keyword instead of individual characters
-      while lo > 1 and is_keyword(new_cps, lo - 1) do lo = lo - 1 end
-      while hi < #new_cps and is_keyword(new_cps, hi + 1) do hi = hi + 1 end
+      while lo > 1 and is_keyword(new_cps, lo) and is_keyword(new_cps, lo - 1) do
+        lo = lo - 1
+      end
+      while hi < #new_cps and is_keyword(new_cps, hi) and is_keyword(new_cps, hi + 1) do
+        hi = hi + 1
+      end
       changes[#changes + 1] = { first = lo, last = hi, replaced = old_count > 0 }
     else
       local removed = {}
