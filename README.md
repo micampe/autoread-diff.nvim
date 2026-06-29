@@ -1,7 +1,6 @@
-# autoread-diff.nvim
+# autoread-diff
 
-This plugin shows what changed when a file is reloaded after being modified
-externally.
+Show changes when a file is reloaded after being modified externally.
 
 ![Screenshot](https://codeberg.org/micampe/autoread-diff.nvim/raw/branch/media/screenshot.png)
 
@@ -14,7 +13,7 @@ vim.g.autoread_diff_highlight_ms = 5000
 ```
 
 Setting the timeout to `0` disables the timer and the cursor movement clear,
-allowing moving through the file to see all the changes. The diff will be
+so you can move through the file to see all the changes. The diff will be
 cleared when entering insert mode or when the buffer is modified.
 
 ## Install

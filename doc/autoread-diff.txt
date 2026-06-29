@@ -1,0 +1,18 @@
+========================================================================
+autoread-diff                                              *autoread-diff*
+
+Show changes when a file is reloaded after being modified externally.
+
+The changes will be visible for a few seconds or until the cursor is
+moved.
+
+You can change the timeout:
+>lua
+    vim.g.autoread_diff_highlight_ms = 5000
+<
+Setting the timeout to `0` disables the timer and the cursor movement
+clear, so you can move through the file to see all the changes. The diff
+will be cleared when entering insert mode or when the buffer is
+modified.
+
+vim:ft=help:tw=72:sw=4:ts=8:noet:norl:
